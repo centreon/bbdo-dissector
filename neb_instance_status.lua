@@ -1,0 +1,42 @@
+neb_instance_status_proto = Proto("neb_instance_status", "NEB Inst status")
+
+local f_active_host_checks_enabled = ProtoField.bool("neb_instance_status.active_host_checks_enabled", "active host checks", 8, nil, 0x1)
+local f_active_service_checks_enabled = ProtoField.bool("neb_instance_status.active_service_checks_enabled", "active service checks", 8, nil, 0x1)
+local f_check_hosts_freshness = ProtoField.bool("neb_instance_status.check_hosts_freshness", "check host freshness", 8, nil, 0x1)
+local f_check_services_freshness = ProtoField.bool("neb_instance_status.check_services_freshness", "check service freshness", 8, nil, 0x1)
+local f_event_handler_enabled = ProtoField.bool("neb_instance_status.event_handler_enabled", "event handler", 8, nil, 0x1)
+local f_flap_detection_enabled = ProtoField.bool("neb_instance_status.flap_detection_enabled", "flap detection", 8, nil, 0x1)
+local f_poller_id = ProtoField.uint32("neb_instance_status.poller_id", "poller id", base.HEX, nil, nil, "")
+local f_last_alive = ProtoField.uint64("neb_instance_status.last_alive", "last alive", base.HEX, nil, nil, "")
+local f_last_command_check = ProtoField.uint64("neb_instance_status.last_command_check", "last command check", base.HEX, nil, nil, "")
+local f_notifications_enabled = ProtoField.bool("neb_instance_status.notifications_enabled", "notifications", 8, nil, 0x1)
+local f_obsess_over_hosts = ProtoField.bool("neb_instance_status.obsess_over_hosts", "obsess over hosts", 8, nil, 0x1)
+local f_obsess_over_services = ProtoField.bool("neb_instance_status.obsess_over_services", "obsess over services", 8, nil, 0x1)
+local f_passive_host_checks_enabled = ProtoField.bool("neb_instance_status.passive_host_checks_enabled", "passive host checks", 8, nil, 0x1)
+local f_passive_service_checks_enabled = ProtoField.bool("neb_instance_status.passive_service_checks_enabled", "passive service checks", 8, nil, 0x1)
+local f_global_host_event_handler = ProtoField.stringz("neb_instance_status.global_host_event_handler", "global host event handler")
+local f_global_service_event_handler = ProtoField.stringz("neb_instance_status.global_service_event_handler", "global service event handler")
+
+neb_instance_status_proto.fields = { f_active_host_checks_enabled, f_active_service_checks_enabled, f_check_hosts_freshness, f_check_services_freshness, f_event_handler_enabled, f_flap_detection_enabled, f_poller_id, f_last_alive, f_last_command_check, f_notifications_enabled, f_obsess_over_hosts, f_obsess_over_services, f_passive_host_checks_enabled, f_passive_service_checks_enabled, f_global_host_event_handler, f_global_service_event_handler }
+
+function neb_instance_status_proto.dissector(buffer, pinfo, tree)
+    pinfo.cols.protocol = "NEB Inst status"
+    local subtree = tree:add(neb_instance_status_proto, buffer(), "NEB Inst status")
+    subtree:add(f_active_host_checks_enabled, buffer(0, 1))
+    subtree:add(f_active_service_checks_enabled, buffer(1, 1))
+    subtree:add(f_check_hosts_freshness, buffer(2, 1))
+    subtree:add(f_check_services_freshness, buffer(3, 1))
+    subtree:add(f_event_handler_enabled, buffer(4, 1))
+    subtree:add(f_flap_detection_enabled, buffer(5, 1))
+    subtree:add(f_poller_id, buffer(6, 4))
+    subtree:add(f_last_alive, buffer(10, 8))
+    subtree:add(f_last_command_check, buffer(18, 8))
+    subtree:add(f_notifications_enabled, buffer(26, 1))
+    subtree:add(f_obsess_over_hosts, buffer(27, 1))
+    subtree:add(f_obsess_over_services, buffer(28, 1))
+    subtree:add(f_passive_host_checks_enabled, buffer(29, 1))
+    subtree:add(f_passive_service_checks_enabled, buffer(30, 1))
+    local hdlr1 = buffer(31):stringz():len() + 1
+    subtree:add(f_global_host_event_handler, buffer(31, hdlr1))
+    subtree:add(f_global_service_event_handler, buffer(31 + hdlr1))
+end
