@@ -56,9 +56,15 @@ local storage_element_code = {
 
 function dispatch(elem, cat, buff, pinfo, tree)
   if cat == 1 then
-    if elem == 16 then
+    if elem == 3 then
+      local cv_stat = Dissector.get("neb_custom_variable")
+      cv_stat:call(buff, pinfo, tree)
+    elseif elem == 16 then
       local neb_inst_stat = Dissector.get("neb_instance_status")
-        neb_inst_stat:call(buff, pinfo, tree)
+      neb_inst_stat:call(buff, pinfo, tree)
+    elseif elem == 18 then
+      local neb_module = Dissector.get("neb_module")
+      neb_module:call(buff, pinfo, tree)
     elseif elem == 19 then
       local neb_svc_check = Dissector.get("neb_service_check")
       neb_svc_check:call(buff, pinfo, tree)
@@ -72,7 +78,7 @@ function dispatch(elem, cat, buff, pinfo, tree)
       bbdo_resp:call(buff, pinfo, tree)
     elseif elem == 2 then
       local bbdo_ack = Dissector.get("bbdo_ack")
-      bbdo_resp:call(buff, pinfo, tree)
+      bbdo_ack:call(buff, pinfo, tree)
     end
   end
 end
