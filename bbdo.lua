@@ -59,6 +59,12 @@ function dispatch(elem, cat, buff, pinfo, tree)
     if elem == 3 then
       local cv_stat = Dissector.get("neb_custom_variable")
       cv_stat:call(buff, pinfo, tree)
+    elseif elem == 12 then
+        local neb_host_stat = Dissector.get("neb_host")
+        neb_host_stat:call(buff, pinfo, tree)
+    elseif elem == 14 then
+        local neb_host_stat = Dissector.get("neb_host_status")
+        neb_host_stat:call(buff, pinfo, tree)
     elseif elem == 16 then
       local neb_inst_stat = Dissector.get("neb_instance_status")
       neb_inst_stat:call(buff, pinfo, tree)
@@ -99,24 +105,22 @@ bbdo_proto.fields = { f_crc, f_size, f_category, f_element_neb, f_element_bbdo, 
 dissect_bbdo = function (buffer, pktinfo, root, offset)
   local pktlen = buffer:len() - offset
 
-  if (pktlen < 0x10) then
-    return pktlen - 0x10
+  if (pktlen < 4) then
+    return pktlen - 4
   end
 
   if pktlen < (buffer(offset + 2,2):uint() + 0x10) then
     return pktlen - (buffer(offset + 2,2):uint() + 0x10)
   end
 
-
   local category = tonumber(buffer(offset + 4, 2):uint())
   local element = tonumber(buffer(offset + 6, 2):uint())
-
 
   pktinfo.cols.protocol = "BBDO"
 
   local subtree = root:add(bbdo_proto, buffer(), "BBDO Header")
   subtree:add(f_crc, buffer(offset,2))
-  subtree:add(f_size, buffer(offset + 2,2))elodie
+  subtree:add(f_size, buffer(offset + 2,2))
   subtree:add(f_category, buffer(offset + 4,2))
   if category == 1 then
     subtree:add(f_element_neb, buffer(offset + 6,2))
