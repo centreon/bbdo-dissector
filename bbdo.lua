@@ -96,29 +96,65 @@ local f_dest = ProtoField.uint32("bbdo.dst", "BBDO destination", base.HEX, nil, 
 
 bbdo_proto.fields = { f_crc, f_size, f_category, f_element_neb, f_element_bbdo, f_element_storage, f_element, f_source, f_dest }
 
-function bbdo_proto.dissector(buffer, pinfo, tree)
-  local category = tonumber(buffer(4, 2):uint())
-  local element = tonumber(buffer(6, 2):uint())
+dissect_bbdo = function (buffer, pktinfo, root, offset)
+  local pktlen = buffer:len() - offset
 
-  pinfo.cols.protocol = "BBDO"
-
-  local subtree = tree:add(bbdo_proto, buffer(), "BBDO Header")
-  subtree:add(f_crc, buffer(0,2))
-  subtree:add(f_size, buffer(2,2))
-  subtree:add(f_category, buffer(4,2))
-  if category == 1 then
-    subtree:add(f_element_neb, buffer(6,2))
-  elseif category == 2 then
-    subtree:add(f_element_bbdo, buffer(6,2))
-  elseif category == 3 then
-    subtree:add(f_element_storage, buffer(6,2))
-  else
-      subtree:add(f_element, buffer(6,2))
+  if (pktlen < 0x10) then
+    return pktlen - 0x10
   end
-  subtree:add(f_source, buffer(8,4))
-  subtree:add(f_dest, buffer(12,4))
 
-  dispatch(element, category, buffer(16):tvb(), pinfo, tree)
+  if pktlen < (buffer(offset + 2,2):uint() + 0x10) then
+    return pktlen - (buffer(offset + 2,2):uint() + 0x10)
+  end
+
+
+  local category = tonumber(buffer(offset + 4, 2):uint())
+  local element = tonumber(buffer(offset + 6, 2):uint())
+
+
+  pktinfo.cols.protocol = "BBDO"
+
+  local subtree = root:add(bbdo_proto, buffer(), "BBDO Header")
+  subtree:add(f_crc, buffer(offset,2))
+  subtree:add(f_size, buffer(offset + 2,2))elodie
+  subtree:add(f_category, buffer(offset + 4,2))
+  if category == 1 then
+    subtree:add(f_element_neb, buffer(offset + 6,2))
+  elseif category == 2 then
+    subtree:add(f_element_bbdo, buffer(offset + 6,2))
+  elseif category == 3 then
+    subtree:add(f_element_storage, buffer(offset + 6,2))
+  else
+      subtree:add(f_element, buffer(offset + 6,2))
+  end
+  subtree:add(f_source, buffer(offset + 8,4))
+  subtree:add(f_dest, buffer(offset + 12,4))
+
+  dispatch(element, category, buffer(offset + 0x10, buffer(offset + 2,2):uint()):tvb(), pktinfo, root)
+
+  return buffer(offset + 2,2):uint() + 0x10
+end
+
+function bbdo_proto.dissector(buffer, pinfo, tree)
+  local pktlen = buffer:len()
+  local bytes_consumed = 0
+
+  while bytes_consumed < pktlen do
+    local result = dissect_bbdo(buffer, pinfo, tree, bytes_consumed)
+
+    if (result > 0) then
+        bytes_consumed = bytes_consumed + result
+    elseif result == 0 then
+        return 0
+    else
+        pinfo.desegment_offset = bytes_consumed
+        result = -result
+        pinfo.desegment_len = result
+        return pktlen
+    end
+  end
+
+  return bytes_consumed
 end
 
 tcp_table = DissectorTable.get("tcp.port")
